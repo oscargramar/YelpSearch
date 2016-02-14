@@ -8,12 +8,14 @@
 
 import UIKit
 
-class BusinessesViewController: UIViewController, UITableViewDataSource,UITableViewDelegate, UISearchResultsUpdating {
+class BusinessesViewController: UIViewController, UITableViewDataSource,UITableViewDelegate, UISearchResultsUpdating, UIScrollViewDelegate {
     @IBOutlet weak var tableView: UITableView!
 
     var businesses: [Business]!
     var filteredBusinesses: [Business]!
     var searchController: UISearchController!
+    var isMoreDataLoading = false
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,8 +31,9 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
         searchController.hidesNavigationBarDuringPresentation = false
         searchController.searchBar.sizeToFit()
         
-
-        self.navigationItem.title = "Yelp Search"
+        navigationController?.navigationBar
+        navigationController?.navigationBar.barTintColor = UIColor.redColor()
+        navigationController?.navigationBar.translucent = false
         navigationItem.titleView = searchController.searchBar
         definesPresentationContext = true
         
@@ -57,7 +60,7 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
     
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if businesses != nil {
+        if filteredBusinesses != nil {
             return filteredBusinesses.count
         }
         else{
@@ -66,7 +69,9 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
     }
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("BusinessCell", forIndexPath:indexPath) as! BusinessCell
+        cell.setBusinessNumber(indexPath.row)
         cell.business = filteredBusinesses[indexPath.row]
+        
         
         
         
@@ -76,20 +81,40 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
     
     
     func updateSearchResultsForSearchController(searchController: UISearchController) {
-        if let  searchText = searchController.searchBar.text{
-            filteredBusinesses = searchText.isEmpty ? businesses : businesses.filter(){
-            ($0 as Business).name?.rangeOfString(searchText,options: .CaseInsensitiveSearch) != nil
-            }
-            tableView.reloadData()
+            if let  searchText = searchController.searchBar.text{
+                filteredBusinesses = searchText.isEmpty ? businesses : businesses.filter(){
+                    ($0 as Business).name?.rangeOfString(searchText,options: .CaseInsensitiveSearch) != nil
+                }
+                tableView.reloadData()
         }
     }
     
-    
+    func scrollViewDidScroll(scrollView: UIScrollView) {
+        if(!isMoreDataLoading){
+            let scrollViewContentHeight = tableView.contentSize.height
+            let scrollOffsetThreshold = (scrollViewContentHeight - tableView.bounds.size.height)
+                
+            if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.dragging) {
+                isMoreDataLoading = true
+                Business.searchWithTerm("Restaurants", offset: 20, sort: .Distance, categories: nil, deals: nil) { (businesses: [Business]!, error: NSError!) -> Void in
+                    self.isMoreDataLoading = false
+                    self.businesses.appendContentsOf(businesses)
+                    self.filteredBusinesses.appendContentsOf(businesses)
+                    self.tableView.reloadData()
+                }
+            }
+            
+            
+        }
+    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    
+    
 
     /*
     // MARK: - Navigation

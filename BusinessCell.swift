@@ -16,19 +16,21 @@ class BusinessCell: UITableViewCell {
     @IBOutlet weak var reviewsCountLabel: UILabel!
     @IBOutlet weak var addressLabel: UILabel!
     @IBOutlet weak var categoriesLabel: UILabel!
+    var number: Int = 0
     
     var business: Business! {
         didSet{
-            nameLabel.text = business.name
+            nameLabel.text = "\(number+1). " + business.name!
             distanceLabel.text = business.distance
             categoriesLabel.text = business.categories
             reviewsCountLabel.text = " \( business.reviewCount! ) Reviews"
             ratingImageView.setImageWithURL(business.ratingImageURL!)
             thumbImageView.setImageWithURL(business.imageURL!)
             addressLabel.text = business.address
-            
-            
         }
+    }
+    func setBusinessNumber(num: Int){
+        self.number = num
     }
     
 
