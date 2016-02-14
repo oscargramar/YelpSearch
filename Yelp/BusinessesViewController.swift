@@ -8,10 +8,12 @@
 
 import UIKit
 
-class BusinessesViewController: UIViewController, UITableViewDataSource,UITableViewDelegate {
+class BusinessesViewController: UIViewController, UITableViewDataSource,UITableViewDelegate, UISearchResultsUpdating {
     @IBOutlet weak var tableView: UITableView!
 
     var businesses: [Business]!
+    var filteredBusinesses: [Business]!
+    var searchController: UISearchController!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,16 +23,24 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
         tableView.estimatedRowHeight = 120
         
         
+        searchController = UISearchController(searchResultsController: nil)
+        searchController.searchResultsUpdater = self
+        searchController.dimsBackgroundDuringPresentation = false
+        searchController.hidesNavigationBarDuringPresentation = false
+        searchController.searchBar.sizeToFit()
+        
+
+        self.navigationItem.title = "Yelp Search"
+        navigationItem.titleView = searchController.searchBar
+        definesPresentationContext = true
+        
+        
         
 
         Business.searchWithTerm("Thai", completion: { (businesses: [Business]!, error: NSError!) -> Void in
             self.businesses = businesses
+            self.filteredBusinesses = businesses
             self.tableView.reloadData()
-
-            //for business in businesses {
-                //print(business.name!)
-                //print(business.address!)
-            //}
         })
 
 /* Example of Yelp search with more search options specified
@@ -48,7 +58,7 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if businesses != nil {
-            return businesses.count
+            return filteredBusinesses.count
         }
         else{
             return 0
@@ -56,12 +66,24 @@ class BusinessesViewController: UIViewController, UITableViewDataSource,UITableV
     }
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("BusinessCell", forIndexPath:indexPath) as! BusinessCell
-        cell.business = businesses[indexPath.row]
+        cell.business = filteredBusinesses[indexPath.row]
         
         
         
         return cell
     }
+    
+    
+    
+    func updateSearchResultsForSearchController(searchController: UISearchController) {
+        if let  searchText = searchController.searchBar.text{
+            filteredBusinesses = searchText.isEmpty ? businesses : businesses.filter(){
+            ($0 as Business).name?.rangeOfString(searchText,options: .CaseInsensitiveSearch) != nil
+            }
+            tableView.reloadData()
+        }
+    }
+    
     
 
     override func didReceiveMemoryWarning() {
